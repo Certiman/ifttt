@@ -1,3 +1,12 @@
+/* @certiman - November 2021 - version 2
+ * The script below assumes your tado heating schedule for weekdays contains (late) starting times in holiday mode. Since neither IFTTT, nor TADO
+ * allow to change starting times, extra early blocks are added when in weekdays working mode, which are then skipped again IF a special calendar
+ * contains events named "DAY OFF". When the early heating blocks are not skipped, other events triggering lighting in several rooms are added.
+ * These events are handled with code from https://github.com/Certiman/ifttt/kasa-googlecalendar-turnOn.js
+ *
+ * The DAY OFF event should contain the "room X" strings in which lights are NOT activated. Other rooms will be lit, unless NO room is mentioned at all.
+ */
+
 var message = ""
 var titleMessage = ""
 
@@ -6,25 +15,36 @@ var todayIsADayOff = false
 /**
  * When a certain calendar contains event named DAY OFF, it will skip the early firing of tado heating blocks.
  * When the event contains the Strings "room A", "room B" or "room M", the creation of events in the same calendar 
- * which will trigger early KASA lighting scenes, will also be skipped. 
+ * which will trigger early KASA lighting scenes, will be skipped. 
+ * But if nothing is mentioned in the event, they will ALL be skipped.
  */
 let holidayList = GoogleCalendar.listEventsForDate.filter(opt => opt.Title === 'DAY OFF')
 if ( holidayList.length > 0 ){
+  // Whose lights will not be lit
+  let dayoffLuckies = holidayList[0].Description
+
+  if ( dayoffLuckies.search("room") < 0 ) {
+    // if there are no rooms mentioned, skip all of them being lit
+    GoogleCalendar.quickAddEvent1.skip() // no lights MB
+    GoogleCalendar.quickAddEvent2.skip() // no lights room A
+    GoogleCalendar.quickAddEvent3.skip() // no lights room B
+  } else {
+    if ( dayoffLuckies.search("room A") > 0 ) {
+      // skip sending the trigger for lights in room A (Kid Two)
+      GoogleCalendar.quickAddEvent2.skip() // The lighting scene trigger event will not be put in the calendar.
+    }
+    if ( dayoffLuckies.search("room B") > 0 ) {
+      // skip sending the trigger for lights in room B (Kid One)
+      GoogleCalendar.quickAddEvent3.skip() // idem
+    }
+    if ( dayoffLuckies.search("room M") > 0 ) {
+      // skip sending the trigger for lights in room M (Master bedroom)
+      GoogleCalendar.quickAddEvent1.skip() // idem
+    }
+  }
+  
   // for DAY OFF events in the afternoon, we still activate the heating early.
   let dayoffDate = new Date(holidayList[0].Start)
-  let dayoffLuckies = holidayList[0].Description
-  if ( dayoffLuckies.search("room A") > 0 ) {
-    // skip sending the trigger for lights in room A (Kid Two)
-    GoogleCalendar.quickAddEvent2.skip() // The lighting scene trigger event will not be put in the calendar.
-  }
-  if ( dayoffLuckies.search("room B") > 0 ) {
-    // skip sending the trigger for lights in room B (Kid One)
-    GoogleCalendar.quickAddEvent3.skip() // idem
-  }
-  if ( dayoffLuckies.search("room M") > 0 ) {
-    // skip sending the trigger for lights in room M (Master bedroom)
-    GoogleCalendar.quickAddEvent1.skip() // idem
-  }
   // message = message + "dayOffDate.getHours: "+dayoffDate.getHours()
   todayIsADayOff = ( dayoffDate.getHours() < 10 ) 
 }else{
@@ -65,9 +85,6 @@ if ( todayIsADayOff || tadoIsInAwayMode ) {
   TadoHeating.startHeating1.skip()  // Living room
   TadoHeating.startHeating2.skip()  // Kitchen
   TadoHeating.startHeating3.skip()  // Veranda
-  GoogleCalendar.quickAddEvent1.skip() // no lights MB
-  GoogleCalendar.quickAddEvent2.skip() // no lights room A
-  GoogleCalendar.quickAddEvent3.skip() // no lights room B
   titleMessage="No early heating today!"
   message="Tado was not to be activated at the startEarly event. Variable todayIsADayOff: "+todayIsADayOff+", todoIsInAwayMode: "+tadoIsInAwayMode
 }else{
