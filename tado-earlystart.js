@@ -1,10 +1,15 @@
 /* @certiman - November 2021 - version 2
  * The script below assumes your tado heating schedule for weekdays contains (late) starting times in holiday mode. Since neither IFTTT, nor TADO
- * allow to change starting times, extra early blocks are added when in weekdays working mode, which are then skipped again IF a special calendar
- * contains events named "DAY OFF". When the early heating blocks are not skipped, other events triggering lighting in several rooms are added.
+ * allow to change starting times, extra early heating blocks are triggered (IF) when in weekdays working mode, which are skipped again IF a special calendar
+ * contains events named "DAY OFF" (using the filter code below). When the early heating blocks are not skipped, other events triggering lighting in several rooms are added.
  * These events are handled with code from https://github.com/Certiman/ifttt/kasa-googlecalendar-turnOn.js
  *
  * The DAY OFF event should contain the "room X" strings in which lights are NOT activated. Other rooms will be lit, unless NO room is mentioned at all.
+ *
+ * Summary of the chain of events:
+ * 1. IF: A Calendar event with the title "Do we start early heating?" serves as the IF event for this script.
+ * 2. WITH: Several queries to tado history and the weather for tomorrow (not yet) are used in the filter code below, to block stuff in the then.
+ * 3. THEN: Several actions like starting to heat for 90 to 120 minutes and adding some calendar events at the time of needed lighting.
  */
 
 var message = ""
