@@ -1,6 +1,6 @@
 /*
- * Some other script creates events in the IFTTT calendar with the title containing the room to light up.
- * This script can only skip one room because of the way the IF is written.
+ * Some other script creates several events in the IFTTT calendar with the title containing the room to light up.
+ * This script can only light up one room because of the way the IF is written.
  * Per room to light up, an event should therefore be created, at the exact moment WHEN the Kasa lights are turned on there.
  */
 
